@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<div class="wrap">
+  <section class="hero">
+    <div class="stack">
+      <span class="eyebrow">Histopathology · Convolutional Neural Network</span>
+      <h1>Breast cancer detection from biopsy images, in under a second.</h1>
+      <p class="lede">HistoScan classifies H&amp;E-stained breast tissue as <b>benign</b> or <b>malignant</b> with a CNN, scans larger tissue regions tile by tile, and shows <b>where</b> it looked using Grad-CAM, so a pathologist can check its reasoning.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="{{ url_for('analyze') }}">Analyze an image →</a>
+        <a class="btn btn-ghost" href="{{ url_for('model_page') }}">How the model works</a>
+      </div>
+    </div>
+    <div class="slide" aria-label="Sample tissue patches from the test set">
+      <div class="tiles">
+        {% for s in samples %}<img src="{{ url_for('static', filename='samples/' ~ s.file) }}" alt="">{% endfor %}
+        {% for s in samples[:3] %}<img src="{{ url_for('static', filename='samples/' ~ s.file) }}" alt="">{% endfor %}
+      </div>
+      <div class="scan"></div>
+      <span class="tag">H&amp;E · 50×50 px patches</span>
+    </div>
+  </section>
+
+  {% if m %}
+  <div class="stats">
+    <div class="stat"><b>{{ "%.1f"|format(m.accuracy*100) }}%</b><span>test accuracy (unseen patients)</span></div>
+    <div class="stat"><b>{{ "%.3f"|format(m.auc) }}</b><span>ROC-AUC</span></div>
+    <div class="stat"><b>{{ "%.1f"|format(m.recall*100) }}%</b><span>sensitivity (cancer caught)</span></div>
+    <div class="stat"><b>{{ "{:,}".format(m.counts.train + m.counts.val + m.counts.test) }}</b><span>patches from {{ m.patients.train + m.patients.val + m.patients.test }} patients</span></div>
+    <div class="stat"><b>{{ "{:,}".format(m.n_params) }}</b><span>trainable parameters</span></div>
+  </div>
+  {% endif %}
+
+  <section class="section">
+    <div class="section-head">
+      <span class="eyebrow">The problem</span>
+      <h2>Manual slide reading is slow and subjective</h2>
+      <p class="muted">Breast cancer is the most commonly diagnosed cancer in women worldwide, with about 2.3 million new cases a year (WHO). Diagnosis depends on a pathologist examining stained biopsy tissue under a microscope. That takes time and expertise, and different pathologists can disagree on the same slide.</p>
+    </div>
+    <div class="grid g3">
+      <div class="card stack"><h3>Limited specialists</h3><p class="muted">Trained pathologists are scarce, especially in rural and resource-constrained hospitals.</p></div>
+      <div class="card stack"><h3>Fatigue and volume</h3><p class="muted">One slide can hold thousands of fields of view. Reviewing many slides a day raises the chance of missed regions.</p></div>
+      <div class="card stack"><h3>Hand-crafted features fall short</h3><p class="muted">Older CAD systems relied on manual features (GLCM, LBP, HOG) that miss complex tissue patterns. CNNs learn features directly from pixels.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <span class="eyebrow">Our solution</span>
+      <h2>End-to-end pipeline</h2>
+    </div>
+    <ol class="flow">
+      <li><b>Upload</b><span>Biopsy image or tissue patch (PNG/JPG/TIFF)</span></li>
+      <li><b>Preprocess</b><span>Resize, crop, normalise pixels to [0, 1]</span></li>
+      <li><b>CNN features</b><span>3 conv blocks learn edges → nuclei → tissue architecture</span></li>
+      <li><b>Classify</b><span>Dense layers + sigmoid give P(malignant)</span></li>
+      <li><b>Explain</b><span>Grad-CAM heatmap or tile-level probability map</span></li>
+      <li><b>Report</b><span>Saved to history with a printable report</span></li>
+    </ol>
+  </section>
+
+  <section class="section">
+    <div class="grid g2">
+      <div class="card stack">
+        <span class="eyebrow">Objectives</span>
+        <h3>What this project set out to do</h3>
+        <ul class="muted" style="margin:0;padding-left:18px">
+          <li>Study existing ML and deep-learning approaches for breast cancer classification</li>
+          <li>Preprocess histopathology data with augmentation</li>
+          <li>Design and train a CNN for binary classification (benign vs malignant)</li>
+          <li>Evaluate with accuracy, precision, recall, F1, confusion matrix and ROC-AUC</li>
+          <li>Build a web interface for upload and real-time prediction</li>
+          <li>Add explainability with Grad-CAM</li>
+        </ul>
+      </div>
+      <div class="card stack">
+        <span class="eyebrow">Scope</span>
+        <h3>In scope / out of scope</h3>
+        <p><b>In:</b> <span class="muted">CNN model, preprocessing, training and evaluation, web interface, visualisation of metrics.</span></p>
+        <p><b>Out:</b> <span class="muted">Clinical deployment, hospital system integration, live slide scanning, multi-centre validation, regulatory approval.</span></p>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

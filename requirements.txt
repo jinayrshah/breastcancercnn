@@ -1,0 +1,7 @@
+flask>=3.0
+numpy>=1.24
+pillow>=10.0
+# Optional, only to retrain the bundled model and draw plots:
+matplotlib>=3.7
+# Optional, only for the Keras/BreakHis model (see training/keras):
+# tensorflow>=2.16

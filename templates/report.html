@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Report {{ r.id }}{% endblock %}
+{% block content %}
+<div class="wrap">
+  <article class="report stack" style="gap:24px">
+    <header>
+      <div class="stack" style="gap:4px">
+        <span class="eyebrow">HistoScan · AI-assisted histopathology report</span>
+        <h2>Case {{ r.patient or r.id }}</h2>
+        <span class="muted">{{ r.ts.replace('T',' ') }} · Report ID <span class="mono">{{ r.id }}</span></span>
+      </div>
+      <span class="pill {{ 'malig' if r.label=='Malignant' else 'benign' }}" style="font-size:1rem;padding:6px 14px">{{ r.label }}</span>
+    </header>
+    <div class="grid g2">
+      <dl class="kv">
+        <dt>Image</dt><dd class="mono">{{ r.filename }}</dd>
+        <dt>Model</dt><dd>{{ r.model }}</dd>
+        <dt>Analysis mode</dt><dd>{{ 'Region scan (sliding window)' if r.mode=='scan' else 'Single patch' }}</dd>
+        <dt>P(malignant)</dt><dd class="mono">{{ "%.4f"|format(r.prob) }}</dd>
+        <dt>Confidence</dt><dd>{{ "%.1f"|format(r.confidence*100) }}%</dd>
+        <dt>Risk band</dt><dd>{{ r.detail.risk }}</dd>
+        {% if r.detail.tiles %}<dt>Suspicious tiles</dt><dd>{{ r.detail.tiles.suspicious }} of {{ r.detail.tiles.tissue }} ({{ r.detail.tiles.pct }}%)</dd>{% endif %}
+        <dt>Inference time</dt><dd>{{ r.ms }} ms</dd>
+      </dl>
+      <div class="stack">
+        <b>{{ r.detail.explain_title }}</b>
+        <img src="{{ r.detail.explain }}" alt="Explanation heatmap" style="border-radius:8px">
+        <span class="muted" style="font-size:.85rem">{{ r.detail.explain_note }}</span>
+      </div>
+    </div>
+    <div class="steps">
+      {% for s in r.detail.steps %}
+      <figure><img src="{{ s.img }}" alt="{{ s.title }}"><figcaption><b>{{ s.title }}</b><span>{{ s.note }}</span></figcaption></figure>
+      {% endfor %}
+    </div>
+    <p class="notice">Generated automatically by a research prototype. Every finding must be confirmed by a qualified pathologist before any clinical decision.</p>
+    <div class="no-print" style="display:flex;gap:10px"><button class="btn btn-primary" onclick="window.print()">Print / save as PDF</button><a class="btn btn-ghost" href="{{ url_for('history') }}">Back to history</a></div>
+  </article>
+</div>
+{% endblock %}

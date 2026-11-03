@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Analyze{% endblock %}
+{% block content %}
+<div class="wrap analyze">
+  <form class="card stack" id="form" style="gap:18px">
+    <div class="stack" style="gap:6px">
+      <span class="eyebrow">Step 1</span>
+      <h2 style="font-size:1.5rem">Choose a tissue image</h2>
+    </div>
+    <label class="drop" id="drop" for="file">
+      <img id="preview" hidden alt="Selected image preview">
+      <b id="dropText">Drop an image here or click to browse</b>
+      <div class="muted" style="font-size:.85rem">PNG, JPG or TIFF · small patch or a larger tissue region</div>
+      <input type="file" id="file" name="image" accept="image/*">
+    </label>
+
+    <div class="stack" style="gap:8px">
+      <span style="font-weight:600;font-size:.9rem">Or try a test-set sample (patients never seen in training)</span>
+      <div class="samples" id="samples">
+        {% for s in samples %}
+        <button type="button" class="sample{{ ' wide' if s.kind=='region' }}" data-file="{{ s.file }}" title="{{ s.file }}: ground truth {{ s.truth }}">
+          <img src="{{ url_for('static', filename='samples/' ~ s.file) }}" alt="Sample {{ loop.index }}, ground truth {{ s.truth }}">
+        </button>
+        {% endfor %}
+      </div>
+      <span class="muted" style="font-size:.8rem" id="truth"></span>
+    </div>
+
+    <label class="field">Model
+      <select id="backend" name="backend">
+        {% for b in backends %}
+        <option value="{{ b.id }}" {{ 'disabled' if not b.ready }}>{{ b.name }}{{ '' if b.ready else ' (not loaded)' }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field">Patient / case ID <span class="muted" style="font-weight:400">(optional)</span>
+      <input type="text" id="patient" name="patient" placeholder="e.g. CASE-0142" maxlength="60">
+    </label>
+    <button class="btn btn-primary" id="go" type="submit" disabled>Run analysis</button>
+    <p class="error" id="err" role="alert" hidden></p>
+  </form>
+
+  <section class="card" id="result" aria-live="polite">
+    <div class="empty" id="empty">
+      <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#efe8f7"/><circle cx="25" cy="27" r="8" fill="#d4497e" opacity=".8"/><circle cx="40" cy="38" r="6" fill="#6b45a8" opacity=".8"/><circle cx="38" cy="22" r="3" fill="#6b45a8" opacity=".5"/></svg>
+      <h3>Results appear here</h3>
+      <p style="max-width:42ch">Pick a sample on the left and press <b>Run analysis</b>. You will see the prediction, how confident the model is, each preprocessing step and the regions that drove the decision.</p>
+    </div>
+    <div class="empty" id="loading" hidden><div class="spinner"></div><p>Running the CNN…</p></div>
+
+    <div class="stack" id="out" hidden style="gap:24px">
+      <div class="verdict" id="verdict">
+        <div class="stack" style="gap:4px">
+          <span class="eyebrow" style="color:inherit">Prediction</span>
+          <h2 id="label">—</h2>
+          <span id="sub" class="muted"></span>
+        </div>
+        <div class="gauge">
+          <div style="font:600 .8rem var(--body)">P(malignant) = <span id="pval" class="mono"></span></div>
+          <div class="bar"><i id="pin" style="left:50%"></i></div>
+          <div class="bar-scale"><span>0</span><span>0.5</span><span>1</span></div>
+        </div>
+      </div>
+
+      <dl class="kv" id="kv"></dl>
+
+      <div class="stack">
+        <h3>Preprocessing pipeline</h3>
+        <div class="steps" id="steps"></div>
+      </div>
+
+      <div class="stack explain">
+        <h3 id="exTitle">Explainability</h3>
+        <img id="exImg" alt="Model explanation heatmap">
+        <div class="stack" style="gap:4px">
+          <div class="legend-ramp"></div>
+          <div class="bar-scale"><span>low</span><span>model attention / probability</span><span>high</span></div>
+        </div>
+        <p class="muted" id="exNote"></p>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn btn-ghost" id="reportLink" href="#">Open printable report</a>
+        <a class="btn btn-ghost" href="{{ url_for('history') }}">View history</a>
+      </div>
+      <p class="notice">This tool supports, and does not replace, a pathologist's diagnosis. It was built for an academic project.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/analyze.js') }}"></script>
+{% endblock %}

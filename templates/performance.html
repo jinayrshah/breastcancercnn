@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Performance{% endblock %}
+{% block content %}
+<div class="wrap">
+{% if not m %}
+  <section class="section"><h1>No metrics yet</h1><p class="muted">Run <code>python training/train_numpy_cnn.py</code> to create <code>models/idc_metrics.json</code>.</p></section>
+{% else %}
+  <section class="section">
+    <div class="section-head">
+      <span class="eyebrow">Evaluation on the held-out test set</span>
+      <h1>How well does it work?</h1>
+      <p class="lede">All numbers below come from {{ "{:,}".format(m.counts.test) }} patches from <b>{{ m.patients.test }} patients the model never saw</b> during training or model selection.</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>{{ "%.1f"|format(m.accuracy*100) }}%</b><span>Accuracy</span></div>
+      <div class="stat"><b>{{ "%.1f"|format(m.precision*100) }}%</b><span>Precision</span></div>
+      <div class="stat"><b>{{ "%.1f"|format(m.recall*100) }}%</b><span>Recall / sensitivity</span></div>
+      <div class="stat"><b>{{ "%.1f"|format(m.specificity*100) }}%</b><span>Specificity</span></div>
+      <div class="stat"><b>{{ "%.3f"|format(m.f1) }}</b><span>F1-score</span></div>
+      <div class="stat"><b>{{ "%.3f"|format(m.auc) }}</b><span>ROC-AUC</span></div>
+    </div>
+  </section>
+
+  <section class="grid g2" style="padding-bottom:28px">
+    <div class="card stack">
+      <h3>Confusion matrix</h3>
+      {% set c = m.confusion %}
+      <div class="cm">
+        <div class="h"></div><div class="h">Predicted benign</div><div class="h">Predicted malignant</div>
+        <div class="h" style="align-self:center">Actual benign</div>
+        <div class="c good"><b>{{ c.tn }}</b><span>true negatives</span></div>
+        <div class="c bad"><b>{{ c.fp }}</b><span>false positives</span></div>
+        <div class="h" style="align-self:center">Actual malignant</div>
+        <div class="c bad"><b>{{ c.fn }}</b><span>false negatives</span></div>
+        <div class="c good"><b>{{ c.tp }}</b><span>true positives</span></div>
+      </div>
+      <p class="muted" style="font-size:.9rem">In screening, a <b>false negative</b> (missed cancer) costs more than a false positive, which a pathologist would double-check. That is why sensitivity is reported next to accuracy.</p>
+    </div>
+
+    <div class="card stack">
+      <h3>ROC curve</h3>
+      {% set W=360 %}{% set H=300 %}{% set P=40 %}
+      <svg class="chart" viewBox="0 0 {{ W+20 }} {{ H+20 }}" role="img" aria-label="ROC curve, AUC {{ '%.3f'|format(m.auc) }}">
+        {% for t in [0,0.25,0.5,0.75,1] %}
+        <line class="axis" x1="{{ P }}" x2="{{ W }}" y1="{{ H-P - t*(H-2*P) }}" y2="{{ H-P - t*(H-2*P) }}"/>
+        <text x="{{ P-8 }}" y="{{ H-P - t*(H-2*P) + 4 }}" text-anchor="end">{{ t }}</text>
+        <text x="{{ P + t*(W-P) }}" y="{{ H-P+18 }}" text-anchor="middle">{{ t }}</text>
+        {% endfor %}
+        <line x1="{{ P }}" y1="{{ H-P }}" x2="{{ W }}" y2="{{ P }}" stroke="#bbb" stroke-dasharray="4 4"/>
+        <polyline fill="none" stroke="#6b45a8" stroke-width="2.5"
+          points="{% for i in range(m.roc.fpr|length) %}{{ P + m.roc.fpr[i]*(W-P) }},{{ H-P - m.roc.tpr[i]*(H-2*P) }} {% endfor %}{{ W }},{{ P }}"/>
+        <text x="{{ (P+W)/2 }}" y="{{ H }}" text-anchor="middle">False positive rate</text>
+        <text x="12" y="{{ H/2 }}" text-anchor="middle" transform="rotate(-90 12 {{ H/2 }})">True positive rate</text>
+        <text x="{{ W-10 }}" y="{{ H-P-14 }}" text-anchor="end" style="fill:#4b2a7b;font-weight:600">AUC = {{ "%.3f"|format(m.auc) }}</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="grid g2" style="padding-bottom:28px">
+    {% set h = m.history %}{% set n = h.loss|length %}
+    {% for key, title, lo, hi in [('acc','Accuracy per epoch',0.6,1.0),('loss','Loss per epoch',0.0,0.8)] %}
+    <div class="card stack">
+      <h3>{{ title }}</h3>
+      {% set W=360 %}{% set H=240 %}{% set P=40 %}
+      <svg class="chart" viewBox="0 0 {{ W+20 }} {{ H+10 }}" role="img" aria-label="{{ title }}">
+        {% for t in range(5) %}{% set v = lo + t*(hi-lo)/4 %}
+        <line class="axis" x1="{{ P }}" x2="{{ W }}" y1="{{ H-P - t*(H-2*P)/4 }}" y2="{{ H-P - t*(H-2*P)/4 }}"/>
+        <text x="{{ P-8 }}" y="{{ H-P - t*(H-2*P)/4 + 4 }}" text-anchor="end">{{ "%.1f"|format(v) }}</text>
+        {% endfor %}
+        {% for i in range(n) %}<text x="{{ P + i*(W-P)/((n-1) or 1) }}" y="{{ H-P+18 }}" text-anchor="middle">{{ i+1 }}</text>{% endfor %}
+        {% for series, color in [(h[key], '#6b45a8'), (h['val_'~key], '#d4497e')] %}
+        <polyline fill="none" stroke="{{ color }}" stroke-width="2.5"
+          points="{% for i in range(n) %}{{ P + i*(W-P)/((n-1) or 1) }},{{ H-P - ((series[i]-lo)/(hi-lo))*(H-2*P) }} {% endfor %}"/>
+        {% for i in range(n) %}<circle cx="{{ P + i*(W-P)/((n-1) or 1) }}" cy="{{ H-P - ((series[i]-lo)/(hi-lo))*(H-2*P) }}" r="3" fill="{{ color }}"/>{% endfor %}
+        {% endfor %}
+        <text x="{{ (P+W)/2 }}" y="{{ H+4 }}" text-anchor="middle">epoch</text>
+      </svg>
+      <div style="display:flex;gap:16px;font-size:.85rem"><span><b style="color:#6b45a8">●</b> training</span><span><b style="color:#d4497e">●</b> validation</span></div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="section" style="padding-top:20px">
+    <div class="section-head"><span class="eyebrow">Context</span><h2>Comparison with published work</h2>
+      <p class="muted">Published results use different datasets, splits and amounts of compute, so this table gives context rather than a head-to-head ranking.</p></div>
+    <div class="card table-wrap" style="padding:8px 16px">
+      <table>
+        <thead><tr><th>Study</th><th>Dataset</th><th>Method</th><th>Reported result</th></tr></thead>
+        <tbody>
+          <tr><td>Spanhol et al. 2016</td><td>BreakHis</td><td>AlexNet / custom CNN</td><td>80–85% accuracy</td></tr>
+          <tr><td>Cruz-Roa et al. 2014</td><td>IDC (this dataset)</td><td>3-layer CNN</td><td>84.2% balanced accuracy, F1 0.718</td></tr>
+          <tr><td>Janowczyk &amp; Madabhushi 2016</td><td>IDC (this dataset)</td><td>AlexNet patch classifier</td><td>F1 0.765, balanced acc. 84.7%</td></tr>
+          <tr><td>Deniz et al. 2018</td><td>BreakHis</td><td>VGG16 / AlexNet transfer</td><td>~92% accuracy</td></tr>
+          <tr><td>Toğaçar et al. 2020</td><td>BreakHis</td><td>ResNet50 / DenseNet</td><td>95.67% accuracy</td></tr>
+          <tr class="hl"><td>HistoScan (ours)</td><td>IDC, patient split</td><td>3-block CNN, NumPy, 171k params</td><td>{{ "%.1f"|format(m.accuracy*100) }}% acc., F1 {{ "%.3f"|format(m.f1) }}, AUC {{ "%.3f"|format(m.auc) }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endif %}
+</div>
+{% endblock %}

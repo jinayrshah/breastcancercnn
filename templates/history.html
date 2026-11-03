@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}History{% endblock %}
+{% block content %}
+<div class="wrap">
+  <section class="section">
+    <div style="display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap">
+      <div class="section-head">
+        <span class="eyebrow">Case log</span>
+        <h1>Prediction history</h1>
+        <p class="muted">{{ stats.n }} analyses saved · {{ stats.mal }} flagged malignant · {{ stats.n - stats.mal }} benign</p>
+      </div>
+      {% if rows %}
+      <form method="post" action="{{ url_for('clear_history') }}"><button class="btn btn-ghost" type="submit">Clear history</button></form>
+      {% endif %}
+    </div>
+    {% if rows %}
+    <div class="card table-wrap" style="padding:8px 16px">
+      <table>
+        <thead><tr><th>Image</th><th>Time</th><th>Case ID</th><th>File</th><th>Result</th><th>P(malignant)</th><th>Model</th><th>Time taken</th><th></th></tr></thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td><img class="thumb" src="{{ url_for('static', filename='uploads/' ~ r.thumb) }}" alt=""></td>
+            <td>{{ r.ts.replace('T',' ') }}</td>
+            <td>{{ r.patient or '—' }}</td>
+            <td class="mono">{{ r.filename[:28] }}</td>
+            <td><span class="pill {{ 'malig' if r.label=='Malignant' else 'benign' }}">{{ r.label }}</span></td>
+            <td class="mono">{{ "%.3f"|format(r.prob) }}</td>
+            <td>{{ r.model }}{{ ' · scan' if r.mode=='scan' }}</td>
+            <td>{{ r.ms }} ms</td>
+            <td><a href="{{ url_for('report', rid=r.id) }}">Report</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card empty" style="min-height:240px"><h3>No analyses yet</h3><a class="btn btn-primary" href="{{ url_for('analyze') }}">Analyze an image</a></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

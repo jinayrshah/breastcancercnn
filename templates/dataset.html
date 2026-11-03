@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Dataset{% endblock %}
+{% block content %}
+<div class="wrap">
+  <section class="section">
+    <div class="section-head">
+      <span class="eyebrow">Data</span>
+      <h1>Breast histopathology images</h1>
+      <p class="lede">Two public datasets of H&amp;E-stained breast tissue are used. The bundled model is trained on the IDC patch dataset; the Keras pipeline targets BreakHis.</p>
+    </div>
+    <div class="grid g2">
+      <div class="card stack">
+        <span class="pill neutral" style="justify-self:start">Bundled model</span>
+        <h3>IDC Breast Histopathology (Janowczyk &amp; Madabhushi, 2016)</h3>
+        <p class="muted">277,524 patches of 50×50 px cut from 162 whole-slide images of breast cancer specimens scanned at 40×. Each patch is labelled by pathologist annotation as <b>IDC-positive</b> (invasive ductal carcinoma, the most common breast cancer subtype, ~80% of cases) or <b>IDC-negative</b>.</p>
+        <dl class="kv">
+          <dt>Image size</dt><dd>50×50 px RGB (cropped to 48×48)</dd>
+          <dt>Classes</dt><dd>0 = benign / non-IDC, 1 = malignant / IDC</dd>
+          {% if m %}
+          <dt>Subset used</dt><dd>{{ "{:,}".format(m.counts.train + m.counts.val + m.counts.test) }} patches, {{ m.patients.train + m.patients.val + m.patients.test }} patients (up to 110 per class per patient, for balance)</dd>
+          {% endif %}
+        </dl>
+      </div>
+      <div class="card stack">
+        <span class="pill neutral" style="justify-self:start">Keras pipeline</span>
+        <h3>BreakHis (Spanhol et al., 2016)</h3>
+        <p class="muted">7,909 microscopic biopsy images (700×460 px) from 82 patients at four magnifications (40×, 100×, 200×, 400×).</p>
+        <dl class="kv">
+          <dt>Benign (2,480)</dt><dd>adenosis, fibroadenoma, phyllodes tumour, tubular adenoma</dd>
+          <dt>Malignant (5,429)</dt><dd>ductal, lobular, mucinous, papillary carcinoma</dd>
+          <dt>Preprocessing</dt><dd>224×224, ÷255, augmentation</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  {% if m %}
+  <section class="section" style="padding-top:0">
+    <div class="section-head"><span class="eyebrow">Split</span><h2>Patient-level train / validation / test split</h2>
+      <p class="muted">Splitting by patient instead of by patch matters. Neighbouring patches from one slide look almost identical, so a random patch split would leak test patients into training and inflate the score.</p></div>
+    <div class="card table-wrap" style="padding:8px 16px">
+      <table>
+        <thead><tr><th>Split</th><th>Patients</th><th>Patches</th><th>Share</th><th>Used for</th></tr></thead>
+        <tbody>
+          {% set tot = m.counts.train + m.counts.val + m.counts.test %}
+          <tr><td>Train</td><td>{{ m.patients.train }}</td><td>{{ "{:,}".format(m.counts.train) }}</td><td>{{ "%.0f"|format(100*m.counts.train/tot) }}%</td><td>Learning the weights (with augmentation)</td></tr>
+          <tr><td>Validation</td><td>{{ m.patients.val }}</td><td>{{ "{:,}".format(m.counts.val) }}</td><td>{{ "%.0f"|format(100*m.counts.val/tot) }}%</td><td>Early stopping, choosing the best epoch</td></tr>
+          <tr><td>Test</td><td>{{ m.patients.test }}</td><td>{{ "{:,}".format(m.counts.test) }}</td><td>{{ "%.0f"|format(100*m.counts.test/tot) }}%</td><td>Final, unbiased evaluation only</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="section" style="padding-top:0">
+    <div class="section-head"><span class="eyebrow">Examples</span><h2>Test-set patches</h2>
+      <p class="muted">Malignant (IDC) tissue tends to show dense, crowded, darkly stained nuclei and lost gland structure. Benign tissue shows more stroma (pink) and organised structure.</p></div>
+    <div class="grid g4">
+      {% for s in samples %}
+      <figure class="card" style="margin:0;padding:12px;display:grid;gap:8px">
+        <img src="{{ url_for('static', filename='samples/' ~ s.file) }}" alt="{{ s.truth }}" style="width:100%;border-radius:8px;image-rendering:pixelated">
+        <span class="pill {{ 'malig' if 'Malignant' in s.truth else 'benign' }}" style="justify-self:start">{{ s.truth }}</span>
+      </figure>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

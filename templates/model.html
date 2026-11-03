@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Model{% endblock %}
+{% block content %}
+<div class="wrap">
+  <section class="section">
+    <div class="section-head">
+      <span class="eyebrow">Architecture</span>
+      <h1>A three-block convolutional network</h1>
+      <p class="lede">Each convolution block learns more abstract features: the first finds colour edges and stain boundaries, the second finds nuclei shapes, and the third finds how cells are arranged, which is what separates invasive carcinoma from normal ducts.</p>
+    </div>
+
+    <div class="arch" role="img" aria-label="CNN architecture diagram">
+      <div class="blk io"><b>Input</b><code>48×48×3</code><span class="muted">H&amp;E RGB, ÷255</span></div><span class="arrow">→</span>
+      <div class="blk conv"><b>Conv 3×3</b><code>16 filters</code><span class="muted">ReLU</span></div><span class="arrow">→</span>
+      <div class="blk pool"><b>MaxPool 2×2</b><code>24×24×16</code></div><span class="arrow">→</span>
+      <div class="blk conv"><b>Conv 3×3</b><code>32 filters</code><span class="muted">ReLU</span></div><span class="arrow">→</span>
+      <div class="blk pool"><b>MaxPool 2×2</b><code>12×12×32</code></div><span class="arrow">→</span>
+      <div class="blk conv"><b>Conv 3×3</b><code>64 filters</code><span class="muted">ReLU · Grad-CAM layer</span></div><span class="arrow">→</span>
+      <div class="blk pool"><b>MaxPool 2×2</b><code>6×6×64</code></div><span class="arrow">→</span>
+      <div class="blk dense"><b>Flatten → Dense</b><code>2304 → 64</code><span class="muted">ReLU, Dropout 0.5</span></div><span class="arrow">→</span>
+      <div class="blk dense"><b>Dense + Sigmoid</b><code>64 → 1</code><span class="muted">P(malignant)</span></div>
+    </div>
+
+    <div class="table-wrap card" style="padding:8px 16px">
+      <table>
+        <thead><tr><th>Layer</th><th>Output shape</th><th>Parameters</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>Conv2D 3×3, 16</td><td>48×48×16</td><td>448</td><td>Low-level features: edges, stain colour</td></tr>
+          <tr><td>MaxPool 2×2</td><td>24×24×16</td><td>0</td><td>Downsample, translation tolerance</td></tr>
+          <tr><td>Conv2D 3×3, 32</td><td>24×24×32</td><td>4,640</td><td>Mid-level: nuclei, membranes</td></tr>
+          <tr><td>MaxPool 2×2</td><td>12×12×32</td><td>0</td><td></td></tr>
+          <tr><td>Conv2D 3×3, 64</td><td>12×12×64</td><td>18,496</td><td>High-level: gland and cell arrangement</td></tr>
+          <tr><td>MaxPool 2×2</td><td>6×6×64</td><td>0</td><td></td></tr>
+          <tr><td>Dense 64 + Dropout 0.5</td><td>64</td><td>147,520</td><td>Combine features, reduce overfitting</td></tr>
+          <tr><td>Dense 1 + Sigmoid</td><td>1</td><td>65</td><td>Probability of malignancy</td></tr>
+          <tr class="hl"><td>Total</td><td></td><td>{{ "{:,}".format(m.n_params or 171169) }}</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><span class="eyebrow">Training</span><h2>How it was trained</h2></div>
+    <div class="grid g3">
+      <div class="card stack"><h3>Loss</h3><p class="muted">Binary cross-entropy:<br><code>L = −[y·log p + (1−y)·log(1−p)]</code></p></div>
+      <div class="card stack"><h3>Optimiser</h3><p class="muted">Adam, learning rate 0.001, halved every 4 epochs. Early stopping on validation AUC (patience 4); best epoch: {{ m.best_epoch or '—' }}.</p></div>
+      <div class="card stack"><h3>Augmentation</h3><p class="muted">Random horizontal/vertical flips and 90° rotations. Tissue has no "up", so these create valid new examples.</p></div>
+      <div class="card stack"><h3>Patient-level split</h3><p class="muted">70 / 15 / 15 split by <b>patient</b>, not by image. Patches from one patient never appear in both train and test, so there is no data leakage.</p></div>
+      <div class="card stack"><h3>Initialisation</h3><p class="muted">He-normal weights (suited to ReLU), zero biases, batch size 64.</p></div>
+      <div class="card stack"><h3>Built from scratch</h3><p class="muted">Every layer's forward and backward pass is written in NumPy (<code>bcnet/npcnn.py</code>) and gradient-checked against numerical derivatives.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><span class="eyebrow">Explainability</span><h2>Grad-CAM and region scanning</h2></div>
+    <div class="grid g2">
+      <div class="card stack">
+        <h3>Grad-CAM (single patch)</h3>
+        <p class="muted">We back-propagate the malignancy score to the last convolution layer, average the gradient of each of its 64 feature maps to get an importance weight, and sum the weighted maps. After a ReLU this gives a 12×12 heatmap of the regions that raised the score, which is upsampled over the image.</p>
+        <code>cam = ReLU( Σₖ mean(∂y/∂Aₖ) · Aₖ )</code>
+      </div>
+      <div class="card stack">
+        <h3>Region scan (larger images)</h3>
+        <p class="muted">For an image larger than a patch, a 50×50 window slides across the tissue. Blank background tiles are skipped and every tissue tile is classified. The image score is the mean of the top 10% most suspicious tiles, so one small tumour focus is not averaged away by healthy tissue.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><span class="eyebrow">Second model</span><h2>Keras CNN on BreakHis</h2>
+      <p class="muted">The repository also contains a TensorFlow/Keras pipeline (<code>training/keras/</code>, Colab notebook) for the BreakHis dataset at 224×224: a 4-block custom CNN plus ResNet50 and VGG16 transfer-learning baselines. Place the trained <code>breast_cnn.keras</code> in <code>models/</code>, install TensorFlow, and it appears as a second model on the Analyze page.</p></div>
+  </section>
+</div>
+{% endblock %}

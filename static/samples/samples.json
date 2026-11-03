@@ -1,0 +1,47 @@
+[
+ {
+  "file": "patch_1_benign.png",
+  "truth": "Benign (non-IDC)",
+  "kind": "patch"
+ },
+ {
+  "file": "patch_2_benign.png",
+  "truth": "Benign (non-IDC)",
+  "kind": "patch"
+ },
+ {
+  "file": "patch_3_benign.png",
+  "truth": "Benign (non-IDC)",
+  "kind": "patch"
+ },
+ {
+  "file": "patch_4_benign.png",
+  "truth": "Benign (non-IDC)",
+  "kind": "patch"
+ },
+ {
+  "file": "patch_5_idc.png",
+  "truth": "Malignant (IDC)",
+  "kind": "patch"
+ },
+ {
+  "file": "patch_6_idc.png",
+  "truth": "Malignant (IDC)",
+  "kind": "patch"
+ },
+ {
+  "file": "patch_7_idc.png",
+  "truth": "Malignant (IDC)",
+  "kind": "patch"
+ },
+ {
+  "file": "patch_8_idc.png",
+  "truth": "Malignant (IDC)",
+  "kind": "patch"
+ },
+ {
+  "file": "region_patient_A.png",
+  "truth": "Tissue region with an IDC tumour (right side)",
+  "kind": "region"
+ }
+]

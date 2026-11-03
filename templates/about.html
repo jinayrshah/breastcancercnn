@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+{% block content %}
+<div class="wrap">
+  <section class="section">
+    <div class="section-head">
+      <span class="eyebrow">Mini Project · Department of Information Technology · {{ year }}</span>
+      <h1>Breast Cancer Detection and Classification Using Deep Learning</h1>
+      <p class="lede">TY-IT, Semester V, Autonomy Syllabus Scheme-III. K J Somaiya Institute of Technology.</p>
+    </div>
+    <div class="grid g2">
+      <div class="card stack">
+        <h3>Team</h3>
+        <div class="team">
+          {% for name, roll in team %}
+          <div class="person"><div class="avatar">{{ name.split()[0][0] }}{{ name.split()[-1][0] }}</div><div><b>{{ name }}</b><div class="muted" style="font-size:.85rem">Roll no. {{ roll }}</div></div></div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card stack">
+        <h3>Guidance</h3>
+        <div class="person"><div class="avatar">RL</div><div><b>{{ guide }}</b><div class="muted" style="font-size:.85rem">Project guide, Assistant Professor</div></div></div>
+        <div class="person"><div class="avatar">RK</div><div><b>Dr. Radhika Kotecha</b><div class="muted" style="font-size:.85rem">Head of Department, Information Technology</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0">
+    <div class="section-head"><span class="eyebrow">Technology</span><h2>Tech stack</h2></div>
+    <div class="grid g4">
+      <div class="card stack"><h3>Model</h3><p class="muted">CNN in NumPy (bundled). TensorFlow/Keras for the BreakHis pipeline.</p></div>
+      <div class="card stack"><h3>Backend</h3><p class="muted">Python, Flask, REST API (<code>/api/predict</code>), SQLite history.</p></div>
+      <div class="card stack"><h3>Frontend</h3><p class="muted">HTML, CSS, JavaScript (no framework), SVG charts.</p></div>
+      <div class="card stack"><h3>Tools</h3><p class="muted">Google Colab (GPU), Pillow, scikit-learn, Matplotlib, Git/GitHub.</p></div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0">
+    <div class="section-head"><span class="eyebrow">Next steps</span><h2>Future enhancements</h2></div>
+    <ul class="muted" style="margin:0;padding-left:18px;max-width:75ch">
+      <li>Multi-class classification of the 8 BreakHis tumour subtypes</li>
+      <li>Stain normalisation (Macenko / Reinhard) to handle colour differences between labs</li>
+      <li>Whole-slide image (WSI) support with tiled pyramid viewing</li>
+      <li>Ensembles of custom CNN + transfer-learning models</li>
+      <li>Validation on data from multiple hospitals, with pathologist feedback</li>
+    </ul>
+  </section>
+
+  <section class="section" style="padding-top:0">
+    <div class="section-head"><span class="eyebrow">Literature</span><h2>References</h2></div>
+    <ol class="refs muted" style="max-width:85ch;padding-left:18px;margin:0">
+      <li>Spanhol F. A. et al., "A Dataset for Breast Cancer Histopathological Image Classification," <i>IEEE Trans. Biomedical Engineering</i>, 2016.</li>
+      <li>Janowczyk A., Madabhushi A., "Deep learning for digital pathology image analysis: A comprehensive tutorial with selected use cases," <i>J. Pathology Informatics</i>, 2016.</li>
+      <li>Cruz-Roa A. et al., "Automatic detection of invasive ductal carcinoma in whole slide images with convolutional neural networks," <i>SPIE Medical Imaging</i>, 2014.</li>
+      <li>Araújo T. et al., "Classification of Breast Cancer Histology Images Using Convolutional Neural Networks," <i>PLOS ONE</i>, 2017.</li>
+      <li>Deniz E. et al., "Transfer Learning Based Histopathologic Image Classification for Breast Cancer Detection," <i>Health Information Science and Systems</i>, 2018.</li>
+      <li>Bejnordi B. E. et al., "Diagnostic Assessment of Deep Learning Algorithms for Detection of Lymph Node Metastases in Women With Breast Cancer," <i>JAMA</i>, 2017.</li>
+      <li>Toğaçar M. et al., "BreastNet: A novel convolutional neural network model through histopathological images for the diagnosis of breast cancer," <i>Physica A</i>, 2020.</li>
+      <li>Selvaraju R. R. et al., "Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization," <i>ICCV</i>, 2017.</li>
+    </ol>
+  </section>
+</div>
+{% endblock %}
